@@ -68,14 +68,16 @@
 
 		select: function () {
 			var val = this.$menu.find('.active').attr('data-value')
+                        var obj = jQuery.parseJSON(this.$menu.find('.active').attr('data-object'))
+                        
 			this.$element
-				.val(this.updater(val))
+				.val(this.updater(val,obj))
 				.change()
 			return this.hide()
 		},
 
-		updater: function (item) {
-			return item
+		updater: function (item,obj) {
+			return item;
 		},
 
 		show: function () {
@@ -157,13 +159,38 @@
 			// Save for selection retreival
 			this.ajax.data = data;
 	
-			items = $.grep(data, function (item) {
+                        items = {};
+                        items.length = 0;
+			$.each(data, function (i,item) {
 				if (that.ajax.displayField) {
-					item = item[that.ajax.displayField]
+                                        if(that.ajax.displayField instanceof Array)
+                                        {
+                                            //arr = that.ajax.displayField;
+                                                //console.log(that.ajax.displayField);
+                                               
+                                            for(var j=0;j<that.ajax.displayField.length;j++)
+                                            {  
+                                                //console.log(item[that.ajax.displayField[i]]);
+                                                    if(that.matcher(item[that.ajax.displayField[j]]))
+                                                    { 
+                                                        items[i] = data[i];
+                                                        items.length++;
+                                                    }
+                                            }
+                                                
+                                        }
+                                        else
+                                        {
+                                          if(that.matcher(item[that.ajax.displayField]))
+                                              {
+                                                items[i] = data[i];
+                                               items.length++;
+                                              }
+                                        }
+                                         
 				}
-				if (that.matcher(item)) return item
 			})
-	
+                       
 			items = this.sorter(items)
 			
 			if (!items.length) {
@@ -211,19 +238,33 @@
 				caseInsensitive = [],
 				item
 			
-			while (item = items.shift()) {
-				if (this.ajax && this.ajax.displayField) {
-					item = item[this.ajax.displayField]
-				}
-				if (!item.toLowerCase().indexOf(this.query.toLowerCase())) beginswith.push(item)
-				else if (~item.indexOf(this.query)) caseSensitive.push(item)
-				else caseInsensitive.push(item)
+			for(var i=0;i<items.length;i++) {
+
+                            if (this.ajax && this.ajax.displayField) {
+                                
+                                   if(this.ajax.displayField instanceof Array)
+                                   {
+                                           
+                                            item = items[i][this.ajax.displayField[0]];
+                                            if (!item.toLowerCase().indexOf(this.query.toLowerCase())) beginswith.push(items[i])
+                                            else if (~item.indexOf(this.query)) caseSensitive.push(items[i])
+                                            else caseInsensitive.push(items[i])
+                                      
+                                   }
+                                   else
+                                   {    
+                                       item = items[i][this.ajax.displayField]
+                                       if (!item.toLowerCase().indexOf(this.query.toLowerCase())) beginswith.push(items[i])
+                                       else if (~item.indexOf(this.query)) caseSensitive.push(items[i])
+                                       else caseInsensitive.push(items[i])
+                                   }
+                           }	
 			}
-			
+
 			return beginswith.concat(caseSensitive, caseInsensitive)
 		},
 
-		highlighter: function (item) {
+		highlighter: function (item,obj) {
 			var query = this.query.replace(/[\-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&')
 			return item.replace(new RegExp('(' + query + ')', 'ig'), function ($1, match) {
 				return '<strong>' + match + '</strong>'
@@ -234,8 +275,24 @@
 			var that = this
 			
 			items = $(items).map(function (i, item) {
-				i = $(that.options.item).attr('data-value', item)
-				i.find('a').html(that.highlighter(item))
+                                var obj = item;
+                              if (that.ajax.displayField) {
+                                        if(that.ajax.displayField instanceof Array)
+                                        {
+                                            
+                                            item = item[that.ajax.displayField[0]];
+                                        }
+                                        else
+                                        {
+                                           
+                                            item = item[that.ajax.displayField];
+                                        }
+                              }
+                                
+				i = $(that.options.item).attr({"data-value":item,"data-object":JSON.stringify(obj)});
+                       
+                      
+				i.find('a').html(that.highlighter(item,obj))
 				return i[0]
 			})
 			
@@ -333,8 +390,8 @@
 		},
 
 		blur: function (e) {
-			var that = this
-			setTimeout(function () { that.hide() }, 150)
+			var that = this                      
+			setTimeout(function () { that.hide() }, 600)
 		},
 		
 		click: function (e) {
