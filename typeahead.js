@@ -301,27 +301,57 @@
 			return this
 		},
 		
-		next: function (event) {
-			var active = this.$menu.find('.active').removeClass('active'),
-				next = active.next()
-			
-			if (!next.length) {
-				next = $(this.$menu.find('li')[0])
-			}
-			
-			next.addClass('active')
-		},
+                next: function (event) {
+                    var that = this;
+                    var $menu = that.$menu;
+                    var active = $menu.find('.active');
+                    var next = active.next();
 
-		prev: function (event) {
-			var active = this.$menu.find('.active').removeClass('active'),
-				prev = active.prev()
-			
-			if (!prev.length) {
-				prev = this.$menu.find('li').last()
-			}
-			
-			prev.addClass('active')
-		},
+                    var menuHeight = $menu.innerHeight();
+                    var bottomPosition;
+
+                    if (!next.length) {
+                        next = $(this.$menu.find('li')[0])
+                    }
+
+                    active.removeClass('active');
+                    next.addClass('active');
+                    bottomPosition = next.position().top + next.height();
+                    if(menuHeight < bottomPosition){
+                        that.avoidMouseEnter = true;
+                        $menu.on('mousemove',function(){
+                            that.avoidMouseEnter = false;
+                            $menu.off('mousemove');
+                        });
+                        $menu.scrollTop($menu.scrollTop() + bottomPosition - menuHeight);
+                    }
+
+                },
+
+                prev: function (event) {
+                    var that = this;
+                    var $menu = that.$menu;
+                    var active = $menu.find('.active');
+                    var prev = active.prev();
+                    var menuScroll = $menu.scrollTop();
+                    var topPosition;
+
+                    if (!prev.length) {
+                        prev = this.$menu.find('li').last()
+                    }
+
+                    active.removeClass('active');
+                    prev.addClass('active');
+                    topPosition = menuScroll + prev.position().top;
+                    if(menuScroll > topPosition){
+                        that.avoidMouseEnter = true;
+                        $menu.on('mousemove',function(){
+                            that.avoidMouseEnter = false;
+                            $menu.off('mousemove');
+                        });
+                        $menu.scrollTop(topPosition);
+                    }
+                },
 
 		listen: function () {
 			this.$element
@@ -333,7 +363,7 @@
 			this.$element.on('keydown', $.proxy(this.keypress, this))
 			
 			this.$menu
-				.on('click', $.proxy(this.click, this))
+				.on('mousedown', $.proxy(this.click, this))
 				.on('mouseenter', 'li', $.proxy(this.mouseenter, this))
 		},
 
@@ -389,18 +419,37 @@
 			e.stopPropagation()
 		},
 
-		blur: function (e) {
-			var that = this                      
-			setTimeout(function () { that.hide() }, 600)
-		},
+                    blur: function (e) {
+                        var that = this;
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if(this.keepFocus) {
+                            that.$element.focus();
+                            this.keepFocus = false;
+                        }
+                        setTimeout(function () {
+                            if (!that.$menu.is(':focus')) {
+                               return;
+                            }
+                        }, 150)
+                    },
 		
-		click: function (e) {
-			e.stopPropagation()
-			e.preventDefault()
-			this.select()
-		},
+                click: function (e) {
+                    if(e.target.tagName == 'A'){
+                        e.stopPropagation();
+                        e.preventDefault();
+                        this.select();
+                    }
+                    else {
+                    this.keepFocus = true;
+                    }
+                },
 
 		mouseenter: function (e) {
+                    if(this.avoidMouseEnter) {
+                        this.avoidMouseEnter = false;
+                        return;
+                    }
 			this.$menu.find('.active').removeClass('active')
 			$(e.currentTarget).addClass('active')
 		}

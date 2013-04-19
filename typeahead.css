@@ -1,0 +1,17 @@
+/*Necessaire css to work with scrolllbar typeahead
+copy and past it to your css style file
+*/
+.typeahead.dropdown-menu {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* you can add this to avoid :hover rules make the menu look like there are two selected options */
+.typeahead.dropdown-menu > li:not(.active) > a:hover {
+  background: inherit;
+  color:inherit;
+}
+.typeahead.dropdown-menu > li.active {
+  background: inherit;
+  color: inherit;
+}
